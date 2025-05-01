@@ -9,6 +9,8 @@ from io import BytesIO
 import threading
 import websocket
 import sys, os, time
+import random
+
 ###This part could be different for everyone### 
 sys.path.append(os.path.join(os.path.join(os.path.dirname(__file__), '..'), 'Python-SDK'))
 # sys.path.append(os.path.join(os.path.dirname(__file__), 'Python-SDK'))
@@ -160,7 +162,40 @@ class MistyGUI:
         self.shake.grid(row=0, column=4, padx=5, pady=0)
 
 
+        ## New gestures
+
+        self.wave = tk.Button(self.topbutton_frame, wraplength=300, text="Wave", height=3, font=("Ariel",10), command=lambda m="wave": self.action(m))
+        self.wave.grid(row=1, column=0, padx=5, pady=0)
+
+        self.tilt = tk.Button(self.topbutton_frame, wraplength=300, text="Head Tilt", height=3, font=("Ariel",10), command=lambda m="tilt": self.action(m))
+        self.tilt.grid(row=1, column=1, padx=5, pady=0)
+
+        self.shrug = tk.Button(self.topbutton_frame, wraplength=300, text="Shrug", height=3, font=("Ariel",10), command=lambda m="shrug": self.action(m))
+        self.shrug.grid(row=1, column=2, padx=5, pady=0)
+
+        self.hop = tk.Button(self.topbutton_frame, wraplength=300, text="Hop", height=3, font=("Ariel",10), command=lambda m="hop": self.action(m))
+        self.hop.grid(row=1, column=3, padx=5, pady=0)
+
         #TODO: Add more customized buttons to drive misty, play audio, move arms, change led lights, change displayed image, and etc.
+        self.human_phrases = [
+            "Hmm… Could you play my next move in Column",
+            "Let's see… can you put a red piece in ummm… Column",
+            "I think I'd like to make my next move in Column",
+            "Ooo… can you please play my next move in Column",
+            "Okay… I'm thinking Column",
+            "Got it! Let's go with Column",
+            "Alright, uhh… let's try Column"
+            ]
+
+        self.robotic_phrases = [
+            "Please place a red piece in Column",
+            "Insert a red piece into Column",
+            "Place my red piece in Column",
+            "Proceed with red piece in Column",
+            "Please put a red piece in Column",
+            "System processing… Place a red piece in Column",
+            "Place a red piece in Column"
+            ]
 
         # Add a line separator
         self.separator = ttk.Separator(self.root, orient='horizontal')
@@ -221,6 +256,33 @@ class MistyGUI:
                 misty.move_head(0, 0, 50, 100)
                 time.sleep(0.5)
             misty.move_head(0, 0, 0, 100)
+        
+        ## New gestures
+        if phrase == "wave":
+            misty.move_arms(-89, 0)
+            time.sleep(1)
+            misty.move_arms(0, 0)
+            time.sleep(0.75)
+            misty.move_arms(-89, 0)
+            time.sleep(0.75)
+            misty.move_arms(0, 0)
+        if phrase == "tilt":
+            misty.move_head(0, 0, 20, 100)
+            time.sleep(0.5)
+            misty.move_head(0, 0, 0, 100)
+        if phrase == "shrug":
+            misty.move_arms(-60, -60)
+            time.sleep(0.5)
+            misty.move_arms(0, 0)
+        if phrase == "hop":
+            misty.play_audio("s_Joy2.wav")
+            misty.move_head(-20, 0, 0)
+            misty.move_arms(-60, -60)
+            time.sleep(0.5)
+            misty.move_head(0, 0, 0)
+            misty.move_arms(0, 0)
+
+
 
     def switch(self):
         global is_human
@@ -242,7 +304,7 @@ class MistyGUI:
             elif phrase == "win":
                 output = "I win! Thanks for playing. Could you reset the board for me?"
             else:
-                output = "Hmm… Could you play my next move in Column " + phrase + "?"
+                output = random.choice(self.human_phrases) + phrase + "?"
         else:
             #print("Robot")
             if phrase == "greet":
@@ -250,7 +312,8 @@ class MistyGUI:
             elif phrase == "win":
                 output = "Play session concluded. Please reset the board."
             else:
-                output = "Please place a red piece in Column " + phrase + "."
+                output = random.choice(self.robotic_phrases) + phrase + "."
+
         self.text_erase()
         self.textbox.insert(0, output)
 
