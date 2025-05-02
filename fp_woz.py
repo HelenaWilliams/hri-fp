@@ -1,5 +1,14 @@
 # How to run this file: fp_woz.py <misty_ip> <participant_name>
 # Final Project Team: HARDcore Gamers!
+from deepgram import *
+import google.generativeai as genai
+from openai import OpenAI
+import ffmpeg, json, os, requests, socket, sys, time
+from dotenv import load_dotenv
+from mutagen.mp3 import MP3
+from datetime import datetime
+from time import sleep
+from google.cloud import texttospeech
 
 import tkinter as tk
 from tkinter import ttk
@@ -13,6 +22,7 @@ import random
 
 ###This part could be different for everyone### 
 sys.path.append(os.path.join(os.path.join(os.path.dirname(__file__), '..'), 'Python-SDK'))
+
 # sys.path.append(os.path.join(os.path.dirname(__file__), 'Python-SDK'))
 ###This part could be different for everyone###
 from mistyPy.Robot import Robot
@@ -25,11 +35,27 @@ off = -1
 class MistyGUI:
     def __init__(self):
         global on, off
+        
+        # load the environment variables from the .env file
+        load_dotenv()
+
+        # initialize the OpenAI client for TTS with the OPEN_AI_API_KEY environment variable
+        open_ai_api_key = os.getenv('OPEN_AI_API_KEY')
+        if not open_ai_api_key:
+            raise ValueError("Please set the OPEN_AI_API_KEYY environment variable.")
+        self.openai_client = OpenAI(api_key=open_ai_api_key)
+
+        self.speech_file_path_local = path = os.path.join(os.path.dirname(__file__), 'robot_speech_files/speech.mp3')
+        local_ip_address = [(s.connect(('8.8.8.8', 53)), s.getsockname()[0], s.close()) for s in\
+ [socket.socket(socket.AF_INET, socket.SOCK_DGRAM)]][0][1]
+        self.speech_file_path_for_misty = 'http://' + local_ip_address + ':8000/robot_speech_files/speech.mp3'
+        self.volume = 30
 
         # Creates the window for the tkinter interface
         self.root = tk.Tk()
         self.root.geometry("900x900")
         self.root.title("Misty GUI")
+        self.accent = "en-GB-Wavenet-B"
 
         # Define Our Images
         on = tk.PhotoImage(file = "on.png")
@@ -215,13 +241,20 @@ class MistyGUI:
         self.root.mainloop()
 
     def speak(self, phrase):
-        if(len(phrase) > 0):
-            print(f"Speak: {phrase}")
-            # refer to robot commands in RobotCommands.py - https://github.com/MistyCommunity/Python-SDK/blob/main/mistyPy/RobotCommands.py
-            # or in the Misty API documentation - https://lessons.mistyrobotics.com/python-elements/misty-python-api
-            misty.speak(phrase)
-        else:
-            print("Error! No text in text box!")
+        # with self.openai_client.audio.speech.with_streaming_response.create(
+        #         model="gpt-4o-mini-tts", #tts-1 may also be a good choice, as it was designed with low latency
+        #         voice="alloy", # TODO: select a different voice for misty, see all voice options and play around with them at https://www.openai.fm/
+        #         input=phrase,
+        #         instructions="Speak with a calm and encouraging tone.",
+        # ) as response:
+        #     response.stream_to_file(self.speech_file_path_local)
+        # time.sleep(1)
+        # #  # play the speech file on Misty
+        # misty.play_audio(self.speech_file_path_for_misty, volume=self.volume)
+        # print(self.speech_file_path_for_misty)
+        misty.speak(phrase)
+        # misty.play_audio("s_SystemCameraShutter.wav")
+        # misty.play_audio("http://192.168.0.216:8000/robot_speech_files/speech.mp3")
 
     def action(self, phrase):
         print(f"Action: {phrase}")
@@ -281,8 +314,6 @@ class MistyGUI:
             time.sleep(0.5)
             misty.move_head(0, 0, 0)
             misty.move_arms(0, 0)
-
-
 
     def switch(self):
         global is_human
