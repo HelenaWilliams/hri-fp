@@ -128,6 +128,9 @@ class MistyGUI:
 
         self.win = tk.Button(self.buttonframe, wraplength=100, text="Victory", font=("Ariel",10), bg="yellow", command=lambda m="win": self.speech_button(m), height=5)
         self.win.grid(row=2, column=0, sticky=tk.W+tk.E)
+
+        self.oops = tk.Button(self.buttonframe, wraplength=100, text="Mistake", font=("Ariel",10), bg="yellow", command=lambda m="oops": self.speech_button(m), height=5)
+        self.oops.grid(row=2, column=0, sticky=tk.W+tk.E)
         self.buttonframe.pack(fill='x')
 
         self.buttonframe = tk.Frame(self.root)
@@ -343,6 +346,8 @@ class MistyGUI:
                 output = "Hello "+name+"! My name is Misty, and I'm a robot! I'm here today to play some games of Connect-4 with you. Ready to start? "
             elif phrase == "win":
                 output = "I win! Thanks for playing. Could you reset the board for me?"
+            elif phrase == "oops":
+                output = "Oh no! I made a mistake, could you undo my last move? Sorry!"
             else:
                 output = random.choice(self.human_phrases) + phrase + "?"
         else:
@@ -351,6 +356,8 @@ class MistyGUI:
                 output = "Greetings, "+name+". I am Misty II, an advanced open robotics platform. I am here today to complete multiple rounds of Connect-4 with you. Are you prepared to begin?"
             elif phrase == "win":
                 output = "Play session concluded. Please reset the board."
+            elif phrase == "oops":
+                output = "Error. Incorrect move selected. Remove last added piece from board."
             else:
                 output = random.choice(self.robotic_phrases) + phrase + "."
 
