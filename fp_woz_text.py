@@ -123,11 +123,18 @@ class MistyGUI:
         self.buttonframe.columnconfigure(0, weight=1)
 
         # Pre-scripted Messages
-        self.greet = tk.Button(self.buttonframe, wraplength=100, text="Greeting", font=("Ariel",10), bg="yellow", command=lambda m="greet": self.speech_button(m), height=5)
-        self.greet.grid(row=1, column=0, sticky=tk.W+tk.E)
+        self.intro1 = tk.Button(self.buttonframe, wraplength=100, text="Intro 1", font=("Ariel",10), bg="yellow", command=lambda m="intro1": self.speech_button(m), height=5)
+        self.intro1.grid(row=1, column=0, sticky=tk.W+tk.E)
+
+        self.intro2 = tk.Button(self.buttonframe, wraplength=100, text="Intro 2", font=("Ariel",10), bg="yellow", command=lambda m="intro2": self.speech_button(m), height=5)
+        self.intro2.grid(row=1, column=1, sticky=tk.W+tk.E)
 
         self.win = tk.Button(self.buttonframe, wraplength=100, text="Victory", font=("Ariel",10), bg="yellow", command=lambda m="win": self.speech_button(m), height=5)
         self.win.grid(row=2, column=0, sticky=tk.W+tk.E)
+
+        self.goodbye = tk.Button(self.buttonframe, wraplength=100, text="Goodbye", font=("Ariel",10), bg="yellow", command=lambda m="goodbye": self.speech_button(m), height=5)
+        self.goodbye.grid(row=2, column=1, sticky=tk.W+tk.E)
+
         self.buttonframe.pack(fill='x')
 
         self.buttonframe = tk.Frame(self.root)
@@ -140,25 +147,33 @@ class MistyGUI:
         self.buttonframe.columnconfigure(6, weight=1)
 
         # Gameplay Buttons
-        self.r1 = tk.Button(self.buttonframe, wraplength=100, text="C1", font=("Ariel",10), bg="yellow", command=lambda m="1": self.speech_button(m), height=5)
+        self.r1 = tk.Button(self.buttonframe, wraplength=100, text="C1", font=("Ariel",10), bg="yellow", command=lambda: self.speech_button("misty_turn", "1"), height=5)
+        self.r2 = tk.Button(self.buttonframe, wraplength=100, text="C2", font=("Ariel",10), bg="yellow", command=lambda: self.speech_button("misty_turn", "2"), height=5)
+        self.r3 = tk.Button(self.buttonframe, wraplength=100, text="C3", font=("Ariel",10), bg="yellow", command=lambda: self.speech_button("misty_turn", "3"), height=5)
+        self.r4 = tk.Button(self.buttonframe, wraplength=100, text="C4", font=("Ariel",10), bg="yellow", command=lambda: self.speech_button("misty_turn", "4"), height=5)
+        self.r5 = tk.Button(self.buttonframe, wraplength=100, text="C5", font=("Ariel",10), bg="yellow", command=lambda: self.speech_button("misty_turn", "5"), height=5)
+        self.r6 = tk.Button(self.buttonframe, wraplength=100, text="C6", font=("Ariel",10), bg="yellow", command=lambda: self.speech_button("misty_turn", "6"), height=5)
+        self.r7 = tk.Button(self.buttonframe, wraplength=100, text="C7", font=("Ariel",10), bg="yellow", command=lambda: self.speech_button("misty_turn", "7"), height=5)
+        
+        #self.r1 = tk.Button(self.buttonframe, wraplength=100, text="C1", font=("Ariel",10), bg="yellow", command=lambda m="1": self.speech_button(m), height=5)
         self.r1.grid(row=3, column=0, sticky=tk.W+tk.E)
 
-        self.r2 = tk.Button(self.buttonframe, wraplength=100, text="C2", font=("Ariel",10), bg="yellow", command=lambda m="2": self.speech_button(m), height=5)
+        #self.r2 = tk.Button(self.buttonframe, wraplength=100, text="C2", font=("Ariel",10), bg="yellow", command=lambda m="2": self.speech_button(m), height=5)
         self.r2.grid(row=3, column=1, sticky=tk.W+tk.E)
 
-        self.r3 = tk.Button(self.buttonframe, wraplength=100, text="C3", font=("Ariel",10), bg="yellow", command=lambda m="3": self.speech_button(m), height=5)
+        #self.r3 = tk.Button(self.buttonframe, wraplength=100, text="C3", font=("Ariel",10), bg="yellow", command=lambda m="3": self.speech_button(m), height=5)
         self.r3.grid(row=3, column=2, sticky=tk.W+tk.E)
 
-        self.r4 = tk.Button(self.buttonframe, wraplength=100, text="C4", font=("Ariel",10), bg="yellow", command=lambda m="4": self.speech_button(m), height=5)
+        #self.r4 = tk.Button(self.buttonframe, wraplength=100, text="C4", font=("Ariel",10), bg="yellow", command=lambda m="4": self.speech_button(m), height=5)
         self.r4.grid(row=3, column=3, sticky=tk.W+tk.E)
 
-        self.r5 = tk.Button(self.buttonframe, wraplength=100, text="C5", font=("Ariel",10), bg="yellow", command=lambda m="5": self.speech_button(m), height=5)
+        #self.r5 = tk.Button(self.buttonframe, wraplength=100, text="C5", font=("Ariel",10), bg="yellow", command=lambda m="5": self.speech_button(m), height=5)
         self.r5.grid(row=3, column=4, sticky=tk.W+tk.E)
 
-        self.r6 = tk.Button(self.buttonframe, wraplength=100, text="C6", font=("Ariel",10), bg="yellow", command=lambda m="6": self.speech_button(m), height=5)
+        #self.r6 = tk.Button(self.buttonframe, wraplength=100, text="C6", font=("Ariel",10), bg="yellow", command=lambda m="6": self.speech_button(m), height=5)
         self.r6.grid(row=3, column=5, sticky=tk.W+tk.E)
 
-        self.r7 = tk.Button(self.buttonframe, wraplength=100, text="C7", font=("Ariel",10), bg="yellow", command=lambda m="7": self.speech_button(m), height=5)
+        #self.r7 = tk.Button(self.buttonframe, wraplength=100, text="C7", font=("Ariel",10), bg="yellow", command=lambda m="7": self.speech_button(m), height=5)
         self.r7.grid(row=3, column=6, sticky=tk.W+tk.E)
 
         self.buttonframe.pack(fill='x')
@@ -205,7 +220,7 @@ class MistyGUI:
         self.hop.grid(row=1, column=3, padx=5, pady=0)
 
         #TODO: Add more customized buttons to drive misty, play audio, move arms, change led lights, change displayed image, and etc.
-        self.human_phrases = [
+        self.humanoid_misty_turn = [
             "Hmm… Could you play my next move in Column",
             "Let's see… can you put a yellow piece in ummm… Column",
             "I think I'd like to make my next move in Column",
@@ -215,14 +230,34 @@ class MistyGUI:
             "Alright, uhh… let's try Column"
             ]
 
-        self.robotic_phrases = [
-            "Please place a red piece in Column",
-            "Insert a red piece into Column",
-            "Place my red piece in Column",
-            "Proceed with red piece in Column",
-            "Please put a red piece in Column",
-            "System processing… Place a red piece in Column",
-            "Place a red piece in Column"
+        self.robotic_misty_turn = [
+            "Please place a yellow piece in Column",
+            "Insert a yellow game token into Column",
+            "Execute action: yellow piece in Column",
+            "Please deploy my yellow piece to Column",
+            "Initiating move sequence- place yellow piece in Column",
+            "System decision logged- please place a yellow piece in Column",
+            "Please confirm placement of yellow piece in Column"
+            ]
+
+        self.humanoid_your_turn = [
+            "Your turn! Let's see what you do.",
+            "Okay, it's your move now.",
+            "Go ahead- your turn to play.",
+            "Hmm… I wonder where you'll go next.",
+            "Alright! You're up!",
+            "Whenever you're ready, it's your turn.",
+            "Your move- make it count!"
+            ]
+
+        self.robotic_your_turn = [
+            "Human turn initiated. Proceed.",
+            "It is now your move. Begin.",
+            "Awaiting your input.",
+            "Please take your turn.",
+            "Your move is required.",
+            "Begin your turn when prepared.",
+            "Insert red piece to continue."
             ]
 
         # Add a line separator
@@ -335,24 +370,40 @@ class MistyGUI:
             self.on_button.config(image = on)
             is_human = True         
 
-    def speech_button(self, phrase):
+    def speech_button(self, phrase, column=None):
         output = "Error! Invalid phrase!"
         if is_human:
             #print("Human")
-            if phrase == "greet":
-                output = "Hello "+name+"! My name is Misty, and I'm a robot! I'm here today to play some games of Connect-4 with you. Ready to start? "
+            if phrase == "intro1":
+                output = "Hi "+name+"! My name is Misty, and I'm a robot! I'm here today to play some games of Connect-4 with you. I can talk with you, make faces, and celebrate- or get a little grumpy when I lose. I can't answer questions about other things, but I'll do my best to keep it fun! My arms are too short for me to play my pieces by myself- can you help me place the pieces on the board?"
+            elif phrase == "intro2":
+                output = "Awesome, thank you so much! I think you should play red, which means you go first- whenever you're ready! I've been training my whole life for this- hehe."
             elif phrase == "win":
                 output = "I win! Thanks for playing. Could you reset the board for me?"
+            elif phrase == "misty_turn":
+                output = random.choice(self.humanoid_misty_turn) + " " + column + "?"
+            elif phrase == "your_turn":
+                output = random.choice(self.humanoid_your_turn)
+            elif phrase == "goodbye":
+                output = "Thanks for playing, "+name+"! I had a lot of fun, and I hope you did too! You gave me a great challenge. You're pretty good, you know… for a human! Goodbye for now, but I hope I have the chance to play with you again."
             else:
-                output = random.choice(self.human_phrases) + phrase + "?"
+                output = "Unrecognized phrase."
         else:
             #print("Robot")
-            if phrase == "greet":
-                output = "Greetings, "+name+". I am Misty II, an advanced open robotics platform. I am here today to complete multiple rounds of Connect-4 with you. Are you prepared to begin?"
+            if phrase == "intro1":
+                output = "Greetings, "+name+". I am Misty II, an advanced robotics platform. I am here to engage in several rounds of Connect-4 with you. I can generate speech, display expressions, and respond to game outcomes. I cannot answer unrelated questions, but I will follow the game protocols. My arms cannot reach the board- can you please assist by placing my pieces for me?"
+            elif phrase == "intro2":
+                output = "Acknowledged, thank you for your assistance. You have been assigned red, and will take the first turn- begin when ready. My systems are calibrated for optimal performance."
             elif phrase == "win":
                 output = "Play session concluded. Please reset the board."
+            elif phrase == "misty_turn":
+                output = random.choice(self.robotic_misty_turn) + " " + column + "."
+            elif phrase == "your_turn":
+                output = random.choice(self.robotic_your_turn)
+            elif phrase == "goodbye":
+                output = "Thank you for participating, "+name+". Your performance exceeded baseline human metrics. Session concluded. I hope we engage in gameplay again soon."
             else:
-                output = random.choice(self.robotic_phrases) + phrase + "."
+                output = "Unrecognized phrase."
 
         self.text_erase()
         self.textbox.insert(0, output)
