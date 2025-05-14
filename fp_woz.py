@@ -12,12 +12,6 @@ from io import BytesIO
 import threading
 import random
 
-#from google.cloud import texttospeech
-#from deepgram import *
-#import google.generativeai as genai
-#import ffmpeg
-#from mutagen.mp3 import MP3
-
 ###This part could be different for everyone### 
 sys.path.append(os.path.join(os.path.join(os.path.dirname(__file__), '..'), 'Python-SDK'))
 
@@ -47,10 +41,10 @@ class MistyGUI:
             raise ValueError("Please set the OPEN_AI_API_KEY environment variable.")
         self.openai_client = OpenAI(api_key=open_ai_api_key)
 
-        self.speech_file_path_local = path = os.path.join(os.path.dirname(__file__), 'robot_speech_files/speech.mp3')
+        self.speech_file_path_local = path = os.path.join(os.path.dirname(__file__), 'robot_speech_files/speech.wav')
         local_ip_address = [(s.connect(('8.8.8.8', 53)), s.getsockname()[0], s.close()) for s in\
  [socket.socket(socket.AF_INET, socket.SOCK_DGRAM)]][0][1]
-        self.speech_file_path_for_misty = 'http://' + local_ip_address + ':8000/robot_speech_files/speech.mp3'
+        self.speech_file_path_for_misty = 'http://' + local_ip_address + ':8000/robot_speech_files/speech.wav'
         self.volume = 30
 
         # Creates the window for the tkinter interface
@@ -299,15 +293,19 @@ class MistyGUI:
             print(f"Speech error: {e}")
     
     def _upload_speech(self):
-        try:
+         try:
+            self.misty.delete_audio("speech.mp3")
+
             with open(self.speech_file_path_local, "rb") as f:
-                requests.post(
+                response = requests.post(
                     f"http://{self.misty_ip}/api/audio",
                     files={'data': ('speech.mp3', f, 'audio/mpeg')},
                     data={'FileName': 'speech.mp3'}
                 )
+
             self.root.after(100, self._play_audio)
-        except Exception as e:
+
+         except Exception as e:
             print(f"Upload error: {e}")
 
     def _play_audio(self):
