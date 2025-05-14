@@ -1,22 +1,24 @@
 # How to run this file: fp_woz.py <misty_ip> <participant_name>
 # Final Project Team: HARDcore Gamers!
+from deepgram import *
+import google.generativeai as genai
 from openai import OpenAI
-import json, os, requests, socket, sys, time
+import ffmpeg, json, os, requests, socket, sys, time
 from dotenv import load_dotenv
+from mutagen.mp3 import MP3
 from datetime import datetime
 from time import sleep
+from google.cloud import texttospeech
+
 import tkinter as tk
 from tkinter import ttk
 from PIL import Image, ImageTk
+import requests
 from io import BytesIO
 import threading
+import websocket
+import sys, os, time
 import random
-
-#from google.cloud import texttospeech
-#from deepgram import *
-#import google.generativeai as genai
-#import ffmpeg
-#from mutagen.mp3 import MP3
 
 ###This part could be different for everyone### 
 sys.path.append(os.path.join(os.path.join(os.path.dirname(__file__), '..'), 'Python-SDK'))
@@ -32,10 +34,8 @@ off = -1
 
 class MistyGUI:
     #def __init__(self):
-    def __init__(self, ip_address, name):
+    def __init__(self, ip_address):
         self.misty_ip = ip_address
-        self.name = name
-        self.misty = Robot(ip_address)
         global on, off
         
         # load the environment variables from the .env file
@@ -44,7 +44,7 @@ class MistyGUI:
         # initialize the OpenAI client for TTS with the OPEN_AI_API_KEY environment variable
         open_ai_api_key = os.getenv('OPEN_AI_API_KEY')
         if not open_ai_api_key:
-            raise ValueError("Please set the OPEN_AI_API_KEY environment variable.")
+            raise ValueError("Please set the OPEN_AI_API_KEYY environment variable.")
         self.openai_client = OpenAI(api_key=open_ai_api_key)
 
         self.speech_file_path_local = path = os.path.join(os.path.dirname(__file__), 'robot_speech_files/speech.mp3')
@@ -256,11 +256,11 @@ class MistyGUI:
             ]
 
         self.humanoid_victory = [
-            ("I win! Thanks for playing. Could you reset the board for me?", "orange_lights"),
-            ("Haha! I won that one! You almost had me though! Could you reset the board?", "celebrate_soft"),
-            ("Victory! I guess all that training paid off. Mind resetting the board for the next round?", "double_blink_smile"),
-            ("Phew, that was close— nice game! Can you set the board back up?", "smile"),
-            ("Oh wow, that was intense! Good game. Let's reset the board so we can play again.", "head_nod_small")
+            "I win! Thanks for playing. Could you reset the board for me?",
+            "Haha! I won that one! You almost had me though! Could you reset the board?",
+            "Victory! I guess all that training paid off. Mind resetting the board for the next round?",
+            "Phew, that was close— nice game! Can you set the board back up?",
+            "Oh wow, that was intense! Good game. Let's reset the board so we can play again."
             ]
 
         self.robotic_victory = [
@@ -270,140 +270,111 @@ class MistyGUI:
             "This match has concluded in my favor. Please restore the game board.",
             "Session result: win recorded. Prepare for subsequent round. Awaiting board reset."
             ]
- 
+
         # Add a line separator
         self.separator = ttk.Separator(self.root, orient='horizontal')
         self.separator.pack(fill='x', pady=20)
 
+        # Section 4: Video Stream
+        self.label = tk.Label(self.root, text="Live Video Stream (No Audio)", font=("Ariel", 18))
+        self.label.pack(padx=20, pady=10)
+
+        # Add a placeholder for video streaming
+        self.video_label = tk.Label(self.root)
+        self.video_label.pack()
+
+        # Start stream
+        self.start_video_stream()
+
         self.root.mainloop()
 
     def speak(self, phrase):
-        self.phrase = phrase
-        self.root.after(0, self._generate_speech)
 
-    def _generate_speech(self):
-        if is_human: 
-            instructions="Speak with a calm and encouraging tone." 
-        else: 
+         if is_human:
+            instructions="Speak with a calm and encouraging tone."
+         else:
             instructions="Speak in a robotic, monotone voice with autotune."
-        try:
-            with self.openai_client.audio.speech.with_streaming_response.create(
-                model="gpt-4o-mini-tts",
-                voice="alloy",
-                input=self.phrase,
-                instructions=instructions
-            ) as response:
-                response.stream_to_file(self.speech_file_path_local)
-            self.root.after(100, self._upload_speech)
-        except Exception as e:
-            print(f"Speech error: {e}")
-    
-    def _upload_speech(self):
-        try:
-            with open(self.speech_file_path_local, "rb") as f:
-                requests.post(
-                    f"http://{self.misty_ip}/api/audio",
-                    files={'data': ('speech.mp3', f, 'audio/mpeg')},
-                    data={'FileName': 'speech.mp3'}
-                )
-            self.root.after(100, self._play_audio)
-        except Exception as e:
-            print(f"Upload error: {e}")
 
-    def _play_audio(self):
-        try:
-            self.misty.play_audio("speech.mp3", volume=self.volume)
-        except Exception as e:
-            print(f"Playback error: {e}")
+         with self.openai_client.audio.speech.with_streaming_response.create(
+                 model="gpt-4o-mini-tts", #tts-1 may also be a good choice, as it was designed with low latency
+                 voice="alloy", # TODO: select a different voice for misty, see all voice options and play around with them at https://www.openai.fm/
+                 input=phrase,
+                 instructions=instructions,
+         ) as response:
+             response.stream_to_file(self.speech_file_path_local)
+         time.sleep(1)
+
+        # Delete the old audio file from Misty, if it exists
+         misty.delete_audio("speech.mp3")
+
+         with open(self.speech_file_path_local, "rb") as f:
+            response = requests.post(
+                f"http://{self.misty_ip}/api/audio",
+                files={'data': ('speech.mp3', f, 'audio/mpeg')},
+                data={'FileName': 'speech.mp3'} # Misty requires a 'FileName' field as well
+            )
+
+        # Play the uploaded file
+         misty.play_audio("speech.mp3", volume=self.volume)
 
     def action(self, phrase):
         print(f"Action: {phrase}")
+        # refer to robot commands in RobotCommands.py - https://github.com/MistyCommunity/Python-SDK/blob/main/mistyPy/RobotCommands.py
+        # or in the Misty API documentation - https://lessons.mistyrobotics.com/python-elements/misty-python-api
 
+        # TODO: edit the following action and add 3 more to handle your customized nonverbal behaviors and robot reactions (e.g., surprise)
+        # if phrase == "move_head_1":
+        #     misty.move_head(-15, 0, 0, 0)
         if phrase == "change_face":
-            self.misty.display_image("e_Disgust.jpg", 1)
-            self.root.after(5000, lambda: self.misty.display_image("e_Joy.jpg", 1))
-
-        elif phrase == "whee":
-            self.misty.play_audio("s_Ecstacy2.wav")
-
-        elif phrase == "orange_lights":
-            self.misty.change_led(255, 155, 0)
-            self.root.after(5000, lambda: self.misty.change_led(0, 0, 255))
-
-        elif phrase == "nod":
-            steps = [(-40, 0), (26, 0), (-40, 0), (0, 0)]
-            for i, (pitch, yaw) in enumerate(steps):
-                self.root.after(i * 500, lambda p=pitch, y=yaw: self.misty.move_head(p, 0, y, 100))
-
-        elif phrase == "shake":
-            def shake_sequence(step):
-                if step < 4:
-                    angle = -50 if step % 2 == 0 else 50
-                    self.misty.move_head(0, 0, angle, 100)
-                    self.root.after(500, lambda: shake_sequence(step + 1))
-                else:
-                    self.misty.move_head(0, 0, 0, 100)
-            shake_sequence(0)
-
-        elif phrase == "double_blink_smile":
-            self.misty.display_image("e_Joy.jpg", 1)
-            self.misty.change_led(255, 200, 0)
-            self.root.after(400, lambda: self.misty.change_led(0, 0, 255))
-            self.root.after(1400, lambda: self.misty.display_image("e_DefaultContent.jpg", 1))
-
-        elif phrase == "eye_shift":
-            self.misty.move_head(0, -15, -20, 80)
-            self.root.after(500, lambda: self.misty.move_head(0, 0, 0, 80))
-
-        elif phrase == "head_nod_small":
-            self.misty.move_head(-10, 0, 0, 50)
-            self.root.after(500, lambda: self.misty.move_head(0, 0, 0, 50))
-
-        elif phrase == "celebrate_soft":
-            self.misty.display_image("e_Joy.jpg", 1)
-            self.misty.play_audio("s_Joy3.wav")
-            self.root.after(1500, lambda: self.misty.display_image("e_DefaultContent.jpg", 1))
-
-        elif phrase == "smile":
-            self.misty.display_image("e_Joy.jpg", 1)
-            self.root.after(2000, lambda: self.misty.display_image("e_DefaultContent.jpg", 1))
-
-        elif phrase == "wave":
-            def wave_step(step):
-                if step == 0:
-                    self.misty.move_arms(-89, 0)
-                    self.root.after(1000, lambda: wave_step(1))
-                elif step == 1:
-                    self.misty.move_arms(0, 0)
-                    self.root.after(750, lambda: wave_step(2))
-                elif step == 2:
-                    self.misty.move_arms(-89, 0)
-                    self.root.after(750, lambda: wave_step(3))
-                elif step == 3:
-                    self.misty.move_arms(0, 0)
-            wave_step(0)
-
-        elif phrase == "tilt":
-            self.misty.move_head(0, 0, 20, 100)
-            self.root.after(500, lambda: self.misty.move_head(0, 0, 0, 100))
-
-        elif phrase == "shrug":
-            self.misty.move_arms(-60, -60)
-            self.root.after(500, lambda: self.misty.move_arms(0, 0))
-
-        elif phrase == "thinking":
-            self.misty.display_image("e_ContentLeft.jpg", 1)
-            self.misty.play_audio("s_Bored.wav")
-            self.root.after(1500, lambda: self.misty.display_image("e_DefaultContent.jpg", 1))
-
-        elif phrase == "hop":
-            self.misty.play_audio("s_Joy2.wav")
-            self.misty.move_head(-20, 0, 0)
-            self.misty.move_arms(-60, -60)
-            self.root.after(500, lambda: [
-                self.misty.move_head(0, 0, 0),
-                self.misty.move_arms(0, 0)
-            ])
+            misty.display_image("e_Disgust.jpg", 1)
+            time.sleep(5)
+            misty.display_image("e_Joy.jpg", 1)
+        if phrase == "whee":
+            misty.play_audio("s_Ecstacy2.wav")
+        if phrase == "orange_lights":
+            misty.change_led(255, 155, 0)
+            time.sleep(5)
+            misty.change_led(0, 0, 255)
+        if phrase == "nod":
+            misty.move_head(-40, 0, 0, 100)
+            time.sleep(0.5)
+            misty.move_head(26, 0, 0, 100)
+            time.sleep(0.5)
+            misty.move_head(-40, 0, 0, 100)
+            time.sleep(0.5)
+            misty.move_head(0, 0, 0, 100)
+        if phrase == "shake":
+            for i in range(2):
+                misty.move_head(0, 0, -50, 100)
+                time.sleep(0.5)
+                misty.move_head(0, 0, 50, 100)
+                time.sleep(0.5)
+            misty.move_head(0, 0, 0, 100)
+        
+        ## New gestures
+        if phrase == "wave":
+            misty.move_arms(-89, 0)
+            time.sleep(1)
+            misty.move_arms(0, 0)
+            time.sleep(0.75)
+            misty.move_arms(-89, 0)
+            time.sleep(0.75)
+            misty.move_arms(0, 0)
+        if phrase == "tilt":
+            misty.move_head(0, 0, 20, 100)
+            time.sleep(0.5)
+            misty.move_head(0, 0, 0, 100)
+        if phrase == "shrug":
+            misty.move_arms(-60, -60)
+            time.sleep(0.5)
+            misty.move_arms(0, 0)
+        if phrase == "hop":
+            misty.play_audio("s_Joy2.wav")
+            misty.move_head(-20, 0, 0)
+            misty.move_arms(-60, -60)
+            time.sleep(0.5)
+            misty.move_head(0, 0, 0)
+            misty.move_arms(0, 0)
 
     def switch(self):
         global is_human
@@ -419,85 +390,45 @@ class MistyGUI:
     def speech_button(self, phrase, column=None):
         output = "Error! Invalid phrase!"
         if is_human:
+            #print("Human")
             if phrase == "intro1":
+                output = "Hi "+name+"! My name is Misty, and I'm a robot! I'm here today to play some games of Connect-4 with you. I can talk with you, make faces, and celebrate- or get a little grumpy when I lose. I can't answer questions about other things, but I'll do my best to keep it fun! My arms are too short for me to play my pieces by myself- can you help me place the pieces on the board?"
                 self.action("wave")
-                self.misty.display_image("e_DefaultContent.jpg", 1)
-                output = (
-                    f"Hi {self.name}! My name is Misty, and I'm a robot! "
-                    "I'm here today to play some games of Connect-4 with you. "
-                    "I can talk with you, make faces, and celebrate—or get a little grumpy when I lose. "
-                    "I can't answer questions about other things, but I'll do my best to keep it fun! "
-                    "My arms are too short to play my pieces by myself—can you help me place them on the board?"
-                )
             elif phrase == "intro2":
-                self.action("nod")
-                self.misty.display_image("e_Joy.jpg", 1)
-                output = (
-                    "Awesome, thank you so much! I think you should play red, which means you go first—whenever you're ready! "
-                    "I've been training my whole life for this—hehe."
-                )
+                output = "Awesome, thank you so much! I think you should play red, which means you go first- whenever you're ready! I've been training my whole life for this- hehe."
             elif phrase == "win":
-                speech, gesture = random.choice(self.humanoid_victory)
-                self.action(gesture)
-                output = speech
+                output = random.choice(self.humanoid_victory)
             elif phrase == "oops":
-                self.misty.display_image("e_Surprise.jpg", 1)
-                output = "Oh no! I made a mistake—could you undo my last move? Sorry!"
-                self.root.after(2000, lambda: self.misty.display_image("e_DefaultContent.jpg", 1))
+                output = "Oh no! I made a mistake, could you undo my last move? Sorry!"
             elif phrase == "misty_turn":
-                self.misty.display_image("e_ContentLeft.jpg", 1)
-                gesture = random.choice(["tilt", "thinking", "eye_shift"])
-                self.action(gesture)
-                output = random.choice(self.humanoid_misty_turn) + f" {column}?"
-                self.root.after(500, lambda: self.misty.display_image("e_DefaultContent.jpg", 1))
+                output = random.choice(self.humanoid_misty_turn) + " " + column + "?"
             elif phrase == "your_turn":
-                self.misty.display_image("e_ContentLeft.jpg", 1)
                 output = random.choice(self.humanoid_your_turn)
-                self.root.after(500, lambda: self.misty.display_image("e_DefaultContent.jpg", 1))
             elif phrase == "goodbye":
-                self.misty.display_image("e_Admiration.jpg", 1)
-                self.action("wave")
-                self.root.after(2000, lambda: self.misty.display_image("e_Joy.jpg", 1))
-                output = (
-                    f"Thanks for playing, {self.name}! I had a lot of fun, and I hope you did too! "
-                    "You gave me a great challenge. You're pretty good, you know… for a human! "
-                    "Goodbye for now, but I hope I have the chance to play with you again."
-                )
+                output = "Thanks for playing, "+name+"! I had a lot of fun, and I hope you did too! You gave me a great challenge. You're pretty good, you know… for a human! Goodbye for now, but I hope I have the chance to play with you again."
             else:
                 output = "Unrecognized phrase."
         else:
+            #print("Robot")
             if phrase == "intro1":
-                output = (
-                    f"Greetings, {self.name}. I am Misty II, an advanced robotics platform. "
-                    "I am here to engage in several rounds of Connect-4 with you. "
-                    "I can generate speech, display expressions, and respond to game outcomes. "
-                    "I cannot answer unrelated questions, but I will follow the game protocols. "
-                    "My arms cannot reach the board—can you please assist by placing my pieces for me?"
-                )
+                output = "Greetings, "+name+". I am Misty II, an advanced robotics platform. I am here to engage in several rounds of Connect-4 with you. I can generate speech, display expressions, and respond to game outcomes. I cannot answer unrelated questions, but I will follow the game protocols. My arms cannot reach the board- can you please assist by placing my pieces for me?"
             elif phrase == "intro2":
-                output = (
-                    "Acknowledged, thank you for your assistance. You have been assigned red, "
-                    "and will take the first turn—begin when ready. My systems are calibrated for optimal performance."
-                )
+                output = "Acknowledged, thank you for your assistance. You have been assigned red, and will take the first turn- begin when ready. My systems are calibrated for optimal performance."
             elif phrase == "win":
                 output = random.choice(self.robotic_victory)
             elif phrase == "oops":
                 output = "Error. Incorrect move selected. Remove last added piece from board."
             elif phrase == "misty_turn":
-                output = random.choice(self.robotic_misty_turn) + f" {column}."
+                output = random.choice(self.robotic_misty_turn) + " " + column + "."
             elif phrase == "your_turn":
                 output = random.choice(self.robotic_your_turn)
             elif phrase == "goodbye":
-                output = (
-                    f"Thank you for participating, {self.name}. Your performance exceeded baseline human metrics. "
-                    "Session concluded. I hope we engage in gameplay again soon."
-                )
+                output = "Thank you for participating, "+name+". Your performance exceeded baseline human metrics. Session concluded. I hope we engage in gameplay again soon."
             else:
                 output = "Unrecognized phrase."
 
         self.text_erase()
         self.textbox.insert(0, output)
-
 
     def text_box(self):
         print(f"Text: {self.textbox.get()}")
@@ -531,6 +462,68 @@ class MistyGUI:
         self.time_elapsed = 0
         self.update_display()
 
+    def start_video_stream(self):
+        # Make sure misty's camera service is enabled
+        response = misty.enable_camera_service()
+        print("misty.enable_camera_service response code:", response.status_code) # this should show 200
+
+        # Configure the preferred video stream settings
+        # Notice: This port number can be changed video live stream is crashed
+        # This port number must be between 1024 and 65535, default is 5678.
+        self.video_port = 5680
+        try:
+            # Start video streaming
+            response = misty.start_video_streaming(
+                port=self.video_port, 
+                rotation=90, 
+                width=640, 
+                height=480, 
+                quality=60, 
+                overlay=False
+            )
+            
+            print("misty.start_video_streaming response code:", response.status_code) # this should show 200
+
+        except Exception as e:
+            print(f"Error starting video stream: {e}")
+        
+        # Establish WebSocket connection to stream video data
+        video_ws_url = f"ws://{ip_address}:{self.video_port}"
+        print(video_ws_url)
+
+        def on_message(ws, message):
+            try:
+                # Process the incoming message (video frame)
+                image = Image.open(BytesIO(message))
+                image = image.resize((320, 240))  # Resize as needed
+                photo = ImageTk.PhotoImage(image)
+                self.video_label.configure(image=photo)
+                self.video_label.image = photo  # Keep a reference to the image
+            except Exception as e:
+                print(f"Error processing video frame: {e}")
+
+        def on_error(ws, error):
+            print(f"WebSocket error: {error}")
+
+        def on_close(ws, close_status_code, close_msg):
+            print("WebSocket closed")
+
+        def on_open(ws):
+            print("WebSocket connection opened")
+
+        # Create a WebSocket app and set up event handlers
+        ws_app = websocket.WebSocketApp(
+            video_ws_url,
+            on_message=on_message,
+            on_error=on_error,
+            on_close=on_close
+        )
+
+        # Run the WebSocket app in a separate thread
+        ws_thread = threading.Thread(target=ws_app.run_forever, daemon=True)
+        ws_thread.start()
+
+
 # Run the GUI
 if __name__ == "__main__":
 
@@ -540,6 +533,7 @@ if __name__ == "__main__":
 
     ip_address = sys.argv[1]
     name = sys.argv[2]
+    misty = Robot(ip_address)
 
     #MistyGUI()
-    MistyGUI(ip_address, name)
+    MistyGUI(ip_address)
